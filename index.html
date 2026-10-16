@@ -439,6 +439,9 @@ nav.top button{font-size:16px!important;min-height:32px}
 #home:not(.use-original) .home-inner{visibility:hidden}
 @media(max-width:760px){nav.top{gap:20px}nav.top button{font-size:15px!important}.archive-caption,.archive-meta{font-size:14px!important}}
 
+
+.archive-style-title{display:inline-block;font:italic 19px/1.25 var(--serif);color:var(--ink);margin:0 0 3px}
+.archive-detail-title{font:italic 26px/1.25 var(--serif);margin:0 0 16px;color:var(--ink)}
 </style>
 
 <script id="rtc-config">
@@ -1290,8 +1293,9 @@ function renderArchive(focusN){
  for(const e of all){
   const building=SPECIMENS.find(b=>b.id===e.b);
   const card=document.createElement('button');card.type='button';card.className='archive-card';card.dataset.entry=e.n;
+  const archiveHeadline=reconstructionHeadline(e.answers||{},e.pieces||[]);
   card.setAttribute('aria-label',`Open reconstruction ${reconstructionNumber(e)}, ${building?.name||'Unknown building'}`);
-  card.innerHTML=`<div class="archive-frame">${reconstructionSVG(e.pieces)}</div><div class="archive-caption"><span>Reconstruction ${reconstructionNumber(e)}</span><span>${e.mine?'Yours':''}</span></div><div class="archive-meta">${esc(building?.name||'Unknown building')}<br>${esc(e.answers?.func||'Purpose not recorded')} · ${esc(e.date||'')}</div>`;
+  card.innerHTML=`<div class="archive-frame">${reconstructionSVG(e.pieces)}</div><div class="archive-caption"><span>Reconstruction ${reconstructionNumber(e)}</span><span>${e.mine?'Yours':''}</span></div><div class="archive-meta"><span class="archive-style-title">${esc(archiveHeadline.title.replace(/^You created /,'').replace(/\.$/,''))}</span><br>${esc(building?.name||'Unknown building')}<br>${esc(e.answers?.func||'Purpose not recorded')} · ${esc(e.date||'')}</div>`;
   card.onclick=()=>openDetail(e);world.appendChild(card);
  }
  setWall(wallMode);
@@ -1326,7 +1330,8 @@ function setWall(m){wallMode=m;$('#overlayChoices').hidden=m!=='overlay';$('#aWa
   else $('#aSub').textContent=''}
 $('#aWall').onclick=()=>setWall('wall');$('#aOverlay').onclick=()=>setWall('overlay');
 function openDetail(e){
-  const previous=B;activate(SPECIMENS.find(sp=>sp.id===e.b)||PANTHEON);const a=e.answers;$('#modalIn').innerHTML=`<button class="btn quiet close" id="mClose">Close</button><h2>Reconstruction ${reconstructionNumber(e)}</h2>
+  const archiveHeadline=reconstructionHeadline(e.answers||{},e.pieces||[]);
+  const previous=B;activate(SPECIMENS.find(sp=>sp.id===e.b)||PANTHEON);const a=e.answers;$('#modalIn').innerHTML=`<button class="btn quiet close" id="mClose">Close</button><h2>Reconstruction ${reconstructionNumber(e)}</h2><p class="archive-detail-title">${esc(archiveHeadline.title.replace(/^You created /,''))}</p>
   <div class="mstage" id="mS1"><div class="sheet" id="mSheet1"></div></div>
   <div class="arrow">↓</div><p class="context-summary">${esc(contextReading(a))}</p>
   <dl class="facts"><dt>Imagined use</dt><dd>${a.func||'—'}</dd><dt>Imagined setting</dt><dd>${a.setting||a.region||'—'}</dd><dt>Assigned role</dt><dd>${a.role||'—'}</dd><dt>Guided by</dt><dd>${a.guide||'—'}</dd><dt>Familiarity from</dt><dd>${a.culture||'—'}</dd><dt>Date</dt><dd>${e.date}</dd></dl>
@@ -1578,8 +1583,8 @@ async function persistSubmission(navigate=false){
 }
 saveToArchive=()=>persistSubmission(true);
 summaryContent=function(a,pieces,primaryId){const feature=B.hotspots.find(h=>h.fr.includes(primaryId));return `<div class="summary-cards"><article><h3>The places we carry</h3><p>${esc(contextReading(a))}</p></article><article><h3>The original context</h3><p>${esc(feature?.p||B.context)}</p><p>${esc(feature?.reading||B.culturalReading)}</p></article><article><h3>What changed</h3><p>${esc(a.changed||'Not recorded')}</p><p>Your location alone does not explain your choices; the connection comes from the influence you identified.</p></article></div>`};
-function reconstructionHeadline(a){
- const placed=(S.pieces||[]).map(p=>({p,f:FR(p.f)})).filter(v=>v.f);
+function reconstructionHeadline(a,pieces=S.pieces){
+ const placed=(pieces||[]).map(p=>({p,f:FR(p.f)})).filter(v=>v.f);
  const classify=f=>{const sp=SPECIMENS.find(x=>x.id===f.owner||x.name===f.source);const t=String(sp?.facts?.find(r=>r[0]==='Tradition')?.[1]||'')+' '+String(f.source||sp?.name||'');if(/gothic|notre.dame|cologne/i.test(t))return 'Gothic';if(/byzantine|hagia sophia/i.test(t))return 'Byzantine';if(/renaissance/i.test(t))return 'Renaissance';if(/baroque/i.test(t))return 'Baroque';if(/islamic|ottoman|mosque|mughal/i.test(t))return 'Islamic';if(/roman imperial|ancient roman|pantheon|classical|greek/i.test(t))return 'Classical';if(/hindu|indic|indian|temple/i.test(t))return 'Indic';if(/modern|contemporary/i.test(t))return 'Modernist';return null};
  const kind=f=>{const t=[f.category,f.part,f.note,f.label,f.name].filter(Boolean).join(' ').toLowerCase();if(/column|pier|support|pillar|capital|base/.test(t))return 'support';if(/window|portal|door|opening|arch|gallery|rose/.test(t))return 'threshold';if(/ornament|pattern|carving|tracery|motif|frieze|tile|relief/.test(t))return 'ornament';if(/dome|roof|spire|pediment|vault/.test(t))return 'crown';return 'fragment'};
  const counts=new Map(),kinds=new Map();for(const {f} of placed){const st=classify(f);if(st)counts.set(st,(counts.get(st)||0)+1);const k=kind(f);kinds.set(k,(kinds.get(k)||0)+1)}
